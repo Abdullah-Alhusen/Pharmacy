@@ -1426,62 +1426,34 @@
             liveResultsDiv.style.display = 'block';
         });
 
-        // دعم الإدخال عبر ماسح الباركود السريع عند الضغط على Enter
-        scanInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const query = scanInput.value.trim();
-                if (!query) return;
+        // دعم الإدخال عبر مEnter
+// معالجة الضغط على Enter للباركود أو الإضافة السريعة
+scanInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = scanInput.value.trim();
+        if (!query) return;
 
-                const medicines = await executeDbReadAll('medicines');
-            const filtered = medicines.filter(m => 
-                (m.barcode && m.barcode.toLowerCase().includes(query)) ||
-                (m.name && m.name.toLowerCase().includes(query)) ||
-                (m.category && m.category.toLowerCase().includes(query)) ||
-                (m.manufacturer && m.manufacturer.toLowerCase().includes(query))
-            );
+        const medicines = await executeDbReadAll('medicines');
+        
+        // بحث دقيق بالباركود أولاً
+        let matched = medicines.find(m => m.barcode && m.barcode.trim() === query);
+        
+        // إذا لم يوجد، بحث جزئي بالاسم
+        if (!matched) {
+            matched = medicines.find(m => m.name.toLowerCase().includes(query.toLowerCase()));
+        }
 
-            if (filtered.length === 0) {
-                liveResultsDiv.innerHTML = '<div style="padding:12px; text-align:center; color:var(--text-muted);">لا توجد أصناف مطابقة للبحث الحالي بالدليل.</div>';
-            } else {
-                liveResultsDiv.innerHTML = filtered.slice(0, 10).map(m => `
-                    <div class="search-item" onclick="addItemToActiveSalesCart(${m.id})">
-                        <div>
-                            <strong>${m.name}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${m.category || 'عام'})</span>
-                            <br><span style="font-size:0.75rem; color:var(--text-muted);">الباركود: ${m.barcode || '—'} | الكمية المتاحة: ${m.quantity}</span>
-                        </div>
-                        <div style="font-weight:700; color:var(--gold);">${m.price.toFixed(2)} $</div>
-                    </div>
-                `).join('');
-            }
-            liveResultsDiv.style.display = 'block';
-        });
-
-        // دعم الإدخال عبر ماسح الباركود السريع عند الضغط على Enter
-        scanInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const query = scanInput.value.trim();
-                if (!query) return;
-
-                const medicines = await executeDbReadAll('medicines');
-                // البحث الدقيق أولاً بالباركود
-                let matched = medicines.find(m => m.barcode && m.barcode.trim() === query);
-                if (!matched) {
-                    // البحث الجزئي أو بالاسم في حال تعذر الدقة المطلقة للباركود
-                    matched = medicines.find(m => m.name.toLowerCase().includes(query.toLowerCase()));
-                }
-
-                if (matched) {
-                    addItemToActiveSalesCart(matched.id);
-                    scanInput.value = '';
-                    liveResultsDiv.style.display = 'none';
-                } else {
-                    renderToastNotification('لم يتم العثور على أي صنف مطابق للرمز الممسوح.', 'error');
-                }
-            }
-        });
-
+        if (matched) {
+            addItemToActiveSalesCart(matched.id);
+            scanInput.value = '';
+            liveResultsDiv.style.display = 'none';
+            renderToastNotification(`✅ تم إضافة ${matched.name}`, 'success');
+        } else {
+            renderToastNotification('❌ لم يتم العثور على صنف مطابق', 'error');
+        }
+    }
+});
         // إغلاق قائمة البحث المنسدلة عند الضغط في أي مكان خارجي
         document.addEventListener('click', (e) => {
             if (!scanInput.contains(e.target) && !liveResultsDiv.contains(e.target)) {
