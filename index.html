@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الصيدلية الاحترافي - ERP & POS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg: #f4f7f5;
+            --surface: #ffffff;
+            --surface-muted: #f8faf9;
+            --text: #0f172a;
+            --text-muted: #475569;
+            --primary: #064e3b;
+            --primary-hover: #043e2f;
+            --primary-light: #d1fae5;
+            --gold: #b45309;
+            --gold-hover: #92400e;
+            --gold-light: #fef3c7;
+            --danger: #991b1b;
+            --danger-hover: #7f1d1d;
+            --success: #166534;
+            --warning: #854d0e;
+            --border: #cbd5e1;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --radius: 12px;
+            --radius-sm: 6px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dark {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-muted: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --primary-light: #064e3b;
+            --gold: #f59e0b;
+            --gold-hover: #d97706;
+            --gold-light: #78350f;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --border: #475569;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: var(--transition);
+            line-height: 1.5;
+        }
+
+        /* شاشة تسجيل الدخول */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary), #022c22);
+            padding: 16px;
+        }
+
+        .login-box {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 40px 32px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid var(--border);
+        }
+
+        .login-box h2 {
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 1.75rem;
+            text-align: center;
+        }
+
+        .login-box p {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+
+        /* الهيكل الرئيسي للنظام */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 1024px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+            sidebar {
+                display: none !important;
+            }
+        }
+
+        sidebar {
+            background: var(--primary);
+            color: #ffffff;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: inline;
+            flex-direction: column;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        sidebar .brand {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 32px;
+            text-align: center;
+            color: #ffffff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 16px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .sidebar-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-align: right;
+            font-family: var(--font);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-btn:hover, .sidebar-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .sidebar-btn.active {
+            border-right: 4px solid var(--gold);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        header {
+            background: var(--surface);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .header-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-badge.total {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .header-badge.daily {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* الأزرار العامة */
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: var(--font);
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary { background: var(--primary); color: #ffffff; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-gold { background: var(--gold); color: #ffffff; }
+        .btn-gold:hover { background: var(--gold-hover); }
+        .btn-danger { background: var(--danger); color: #ffffff; }
+        .btn-danger:hover { background: var(--danger-hover); }
+        .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+        .btn-outline:hover { background: var(--surface-muted); border-color: var(--text-muted); }
+        
+        /* واجهة العمل والمحتوى */
+        .workspace {
+            padding: 24px;
+            flex: 1;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* الجداول الافتراضية والبطاقات */
+        .panel {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card-stat {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-stat .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .card-stat .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        table th {
+            background: var(--surface-muted);
+            color: var(--text);
+            font-weight: 700;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        table tbody tr:hover {
+            background: var(--surface-muted);
+        }
+
+        /* شاشة البيع ونقطة البيع POS */
+        .pos-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+        }
+
+        @media (max-width: 992px) {
+            .pos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .input-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .live-search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            max-height: 280px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-item:hover {
+            background: var(--surface-muted);
+        }
+
+        .cart-table th, .cart-table td {
+            padding: 8px 12px;
+        }
+
+        .checkout-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: fit-content;
+        }
+
+        .checkout-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 8px;
+        }
+
+        .checkout-row.total {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold);
+            border-bottom: none;
+        }
+
+        /* النوافذ المنبثقة Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 650px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: modalIn 0.2s ease-out;
+        }
+
+        @keyframes modalIn {
+            from { transform: translateY(16px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: var(--surface-muted);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            background: var(--surface-muted);
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 500px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* التنبيهات Toasts */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background: var(--surface);
+            color: var(--text);
+            border-right: 4px solid var(--primary);
+            box-shadow: var(--shadow-lg);
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            animation: toastIn 0.3s ease;
+        }
+
+        .toast.error { border-right-color: var(--danger); }
+        .toast.success { border-right-color: var(--success); }
+
+        @keyframes toastIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .badge-success { background: var(--primary-light); color: var(--primary); }
+        .badge-danger { background: #fee2e2; color: var(--danger); }
+        .badge-warning { background: #fef3c7; color: var(--warning); }
+
+        .hidden { display: none !important; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: fixed; inset: 0; background: #fff; color: #000; padding: 24px; }
+        }
+        #printArea { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h2>نظام المحاسبة والصيدلية الموحد</h2>
+            <p>الرجاء تسجيل الدخول للوصول إلى لوحة التحكم</p>
+            <div class="form-group">
+                <label>اسم المستخدم</label>
+                <input type="text" id="loginUser" class="input-control" value="admin" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="loginPass" class="input-control" value="1234" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" id="loginButton" style="width:100%; padding:12px; margin-top:8px;">تسجيل الدخول</button>
+            <p style="margin-top:16px; font-size:0.8rem; color:var(--text-muted);">مدير: admin / 1234 | موظف: staff / 1234</p>
+        </div>
+    </div>
+
+    <div id="appScreen" class="app-layout hidden">
+        <sidebar>
+            <div class="brand">صيدلية الإيمان</div>
+            <div class="sidebar-menu">
+                <button class="sidebar-btn active" onclick="switchTab('pos')">🖥️ نقطة البيع POS</button>
+                <button class="sidebar-btn" onclick="switchTab('dashboard')">📊 لوحة التحكم</button>
+                <button class="sidebar-btn" onclick="switchTab('medicines')">💊 إدارة الأدوية</button>
+                <button class="sidebar-btn" onclick="switchTab('transactions')">🧾 كشف الفواتير</button>
+                <button class="sidebar-btn" onclick="switchTab('warehouses')">🏭 المستودعات والديون</button>
+                <button class="sidebar-btn" onclick="switchTab('closures')">🗓️ التسويات والإغلاقات</button>
+                <button class="sidebar-btn" onclick="switchTab('logs')">📝 سجل التدقيق والأمان</button>
+                <button class="sidebar-btn" onclick="switchTab('settings')">⚙️ الإعدادات العامة</button>
+            </div>
+            <div style="font-size:0.8rem; text-align:center; color:rgba(255,255,255,0.6);">الإصدار التجاري V3.0</div>
+        </sidebar>
+
+        <div class="main-content">
+            <header>
+                <div class="header-stats">
+                    <div class="header-badge total" id="drawerDisplay">صندوق النظام الكلي: 0.00 $</div>
+                    <div class="header-badge daily" id="dailyDisplay">صندوق الوردية الحالي: 0.00 $</div>
+                </div>
+                <div class="header-actions">
+                    <span id="currentUserLabel" style="font-weight:600; font-size:0.9rem; color:var(--text-muted);">👤 الحساب: مدير</span>
+                    <button class="btn btn-outline" onclick="toggleTheme()" style="padding:6px 12px;">🌓 المظهر</button>
+                    <button class="btn btn-outline" onclick="exportFullSystemBackup()" style="padding:6px 12px;">📥 نسخة احتياطية</button>
+                    <button class="btn btn-danger" onclick="logout()" style="padding:6px 12px;">🚪 خروج</button>
+                </div>
+            </header>
+
+            <div class="workspace">
+
+                <div class="tab-content active" id="tab-pos">
+                    <div class="pos-grid">
+                        <div>
+                            <div class="panel" style="padding:16px;">
+                                <div class="search-wrapper">
+                                    <input type="text" id="scanInput" class="input-control" placeholder="🔍 امسح باركود الدواء أو اكتب اسم الصنف للبحث الفوري والذكي..." autocomplete="off" autofocus>
+                                    <div id="liveSearchResults" class="live-search-results"></div>
+                                </div>
+                                <div class="table-container" style="max-height:calc(100vh - 320px);">
+                                    <table class="cart-table">
+                                        <thead>
+                                            <tr>
+                                                <th>الصنف</th>
+                                                <th>السعر الحالي</th>
+                                                <th>المخزون</th>
+                                                <th style="width:100px;">الكمية المطلوبة</th>
+                                                <th>الإجمالي</th>
+                                                <th>إجراء</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cartTableBody">
+                                            <tr>
+                                                <td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">شاشة البيع فارغة، قم بمسح باركود أو البحث عن الأدوية لإدراجها هنا.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="checkout-panel">
+                            <h3 style="border-bottom:2px solid var(--primary); padding-bottom:8px; color:var(--primary);">تفاصيل الفاتورة المالية</h3>
+                            <div class="form-group">
+                                <label>نوع العملية الحالية</label>
+                                <select id="posTxType" class="input-control" onchange="updateCartTotals()">
+                                    <option value="بيع">🛒 فاتورة مبيعات نقدية</option>
+                                    <option value="استرجاع">↩️ فاتورة مرتجعات نقدية</option>
+                                </select>
+                            </div>
+                            <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+                                <div class="checkout-row">
+                                    <span>عدد الأصناف الفريدة:</span>
+                                    <span id="posItemCount" style="font-weight:600;">0</span>
+                                </div>
+                                <div class="checkout-row">
+                                    <span>إجمالي الوحدات:</span>
+                                    <span id="posTotalQty" style="font-weight:600;">0</span>
+                                </div>
+                                <div class="checkout-row id-admin-only">
+                                    <span>العائد المالي الصافي المتوقع:</span>
+                                    <span id="posTotalProfit" style="font-weight:600; color:var(--success);">0.00 $</span>
+                                </div>
+                                <div class="checkout-row total">
+                                    <span>المجموع النهائي:</span>
+                                    <span id="posInvoiceTotal">0.00 $</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="submitCartInvoice()" style="padding:14px; font-size:1.05rem; margin-top:12px;">✅ معالجة واعتماد الفاتورة فورياً</button>
+                            <button class="btn btn-outline" onclick="clearCart()" style="padding:10px;">✕ إلغاء السلة وتصفير الحقول</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-dashboard">
+                    <div class="grid-cards">
+                        <div class="card-stat">
+                            <div class="value" id="statMedicines">0</div>
+                            <div class="label">📦 إجمالي الأصناف بالمخزن</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="value" id="statSales">0</div>
+                            <div class="label">🛒 فواتير المبيعات المنفذة</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="value" id="statReturns">0</div>
+                            <div class="label">↩️ فواتير المرتجعات</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="value" id="statDrawer">0.00 $</div>
+                            <div class="label">💰 النقد المتوفر بالدرج الكلي</div>
+                        </div>
+                        <div class="card-stat id-admin-only">
+                            <div class="value" id="statProfit" style="color:var(--gold);">0.00 $</div>
+                            <div class="label">📈 أرباح صافية محققة</div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+                        <div class="panel">
+                            <div class="panel-title" style="color:var(--danger); margin-bottom:12px;">⚠️ رصد المخزون الحرج والمنخفض</div>
+                            <div id="lowStockList" style="max-height:280px; overflow-y:auto; font-size:0.85rem;">تحميل المؤشرات...</div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-title" style="color:var(--warning); margin-bottom:12px;">📅 تنبيهات الأدوية منتهية وقريبة الانتهاء (خلال 90 يوماً)</div>
+                            <div id="expiredStockList" style="max-height:280px; overflow-y:auto; font-size:0.85rem;">تحميل المؤشرات...</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-title" style="margin-bottom:12px;">🏆 الأصناف الأعلى مبيعاً وطلباً</div>
+                        <div id="topSellingList" style="max-height:280px; overflow-y:auto;">تحميل الإحصائيات...</div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-medicines">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div style="display:flex; gap:12px; flex:1; min-width:300px;">
+                                <input type="text" id="medSearchInput" class="input-control" placeholder="🔍 فلترة وبحث متقدم في سجلات الأدوية..." oninput="refreshMedicinesTable()">
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-primary id-admin-only" onclick="openMedicineModal(null)">➕ إضافة دواء جديد</button>
+                                <button class="btn btn-gold" onclick="exportMedicinesExcel()">📤 تصدير إكسيل</button>
+                                <button class="btn btn-outline id-admin-only" onclick="document.getElementById('excelFileInput').click()">📥 استيراد إكسيل</button>
+                                <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none;" onchange="importMedicinesExcel(event)">
+                            </div>
+                        </div>
+                        <div class="table-container" style="max-height:calc(100vh - 280px);">
+                            <table id="medicinesTable">
+                                <thead>
+                                    <tr>
+                                        <th>الباركود</th>
+                                        <th>الاسم العلمي/التجاري</th>
+                                        <th>التصنيف</th>
+                                        <th>الشركة</th>
+                                        <th>سعر البيع</th>
+                                        <th class="id-admin-only">سعر الشراء</th>
+                                        <th class="id-admin-only">الربح</th>
+                                        <th>الكمية المتاحة</th>
+                                        <th>تاريخ الصلاحية</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-transactions">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">سجل العمليات والفواتير المؤرشفة بالنظام</span>
+                            <button class="btn btn-danger id-admin-only" onclick="clearAllTransactionsHistory()">🗑️ تصفير سجل المعاملات</button>
+                        </div>
+                        <div class="table-container" style="max-height:calc(100vh - 240px);">
+                            <table id="transactionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>رقم العملية</th>
+                                        <th>نوع العملية</th>
+                                        <th>تفاصيل الأصناف والكميات</th>
+                                        <th>المبلغ الإجمالي</th>
+                                        <th class="id-admin-only">الربح المحقق</th>
+                                        <th>التاريخ والوقت</th>
+                                        <th>المحاسب</th>
+                                        <th>طبيعة السند</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-warehouses">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">كشف حساب مستودعات الشركات والموردين والديون</span>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-primary" onclick="addWarehouseRow()">➕ إضافة سجل مورد</button>
+                                <button class="btn btn-success" onclick="saveWarehousesData()">💾 حفظ التغييرات الحالية</button>
+                                <button class="btn btn-gold" onclick="exportWarehousesExcel()">📤 تصدير إكسيل</button>
+                                <button class="btn btn-outline" onclick="document.getElementById('whExcelInput').click()">📥 استيراد إكسيل</button>
+                                <input type="file" id="whExcelInput" accept=".xlsx, .xls" style="display:none;" onchange="importWarehousesExcel(event)">
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table id="warehousesTable">
+                                <thead>
+                                    <tr>
+                                        <th>اسم المستودع / الشركة الموردة</th>
+                                        <th>مستحقات للمستودع (دائن)</th>
+                                        <th>مستحقات على المستودع (مدين)</th>
+                                        <th>الدفعات المالية المسددة</th>
+                                        <th>الرصيد المتبقي المعلق</th>
+                                        <th>خيارات الإدارة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="warehousesTableBody"></tbody>
+                               <tfoot>
+                                    <tr style="background:var(--surface-muted); font-weight:bold;">
+                                        <td>المجموع الحسابي الإجمالي:</td>
+                                        <td id="whTotalDebit">0.00 $</td>
+                                        <td id="whTotalCredit">0.00 $</td>
+                                        <td id="whTotalPayments">0.00 $</td>
+                                        <td id="whTotalBalance" style="color:var(--gold);">0.00 $</td>
+                                        <td>—</td>
+                                    </tr>
+                               </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-closures">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">إجراءات الإغلاق المالي وتسوية الورديات</span>
+                            <button class="btn btn-gold id-admin-only" onclick="triggerDailyClosureProcess()">🔒 تنفيذ إغلاق مالي للوردية الحالية فوراً</button>
+                        </div>
+                        <div class="table-container">
+                            <table id="closuresTable">
+                                <thead>
+                                    <tr>
+                                        <th>رقم القيد</th>
+                                        <th>تاريخ وتوقيت التسوية</th>
+                                        <th>إجمالي مبيعات الوردية</th>
+                                        <th>إجمالي المرتجعات المخصومة</th>
+                                        <th>الصافي المالي الفعلي للدرج</th>
+                                        <th>عدد الفواتير المنفذة</th>
+                                        <th>مسؤول الإغلاق</th>
+                                        <th>إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-logs">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">سجل الرقابة والأمان العام للأداء (Audit Trail)</span>
+                            <button class="btn btn-danger id-admin-only" onclick="clearSystemAuditLogs()">🗑️ تفريغ سجل التدقيق للأمان</button>
+                        </div>
+                        <div class="table-container" style="max-height:calc(100vh - 240px);">
+                            <table id="logsTable">
+                                <thead>
+                                    <tr>
+                                        <th>المعرف الرقمي</th>
+                                        <th>نوع الإجراء</th>
+                                        <th>الوصف والتفاصيل الفنية المعمقة</th>
+                                        <th>المسؤول عن العملية</th>
+                                        <th>التوقيت الزمني الدقيق</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-settings">
+                    <div class="panel id-admin-only">
+                        <div class="panel-title" style="margin-bottom:16px;">إعدادات عتبة المخزون والتنبيهات الحيوية</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>الحد الأدنى للمخزون الحرج (تنبيه نقص الدواء بالوحدات)</label>
+                                <input type="number" id="cfgLowStockLimit" class="input-control" value="5">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveSystemConfigurationSettings()" style="margin-top:12px;">💾 حفظ المعايير الحالية للإعدادات</button>
+                    </div>
+                    <div class="panel" style="border-color:var(--danger);">
+                        <div class="panel-title" style="color:var(--danger); margin-bottom:12px;">منطقة التحكم بالبيانات الحساسة وإعادة التهيأة</div>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">ملاحظة: إجراءات مسح وإعادة ضبط قاعدة البيانات لا رجعة فيها، يرجى توخي الحذر الشديد.</p>
+                        <button class="btn btn-danger id-admin-only" onclick="wipeEntireDatabaseSystemData()">⚠️ تهيأة ومسح قاعدة البيانات بالكامل</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="medicineModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="medModalTitle">إضافة / تعديل بيانات صنف طبي</h3>
+                <button onclick="closeMedicineModal()" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:var(--text);">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="formMedId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>الباركود العالمي للمنتج</label>
+                        <input type="text" id="formMedBarcode" class="input-control" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>اسم الدواء (العلمي والتجاري المعتمد)</label>
+                        <input type="text" id="formMedName" class="input-control" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>التصنيف أو العائلة الدوائية</label>
+                        <input type="text" id="formMedCategory" class="input-control" placeholder="مثال: مضادات حيوية" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>الشركة المصنعة أو الموردة</label>
+                        <input type="text" id="formMedManufacturer" class="input-control" autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>سعر البيع النهائي للمستهلك ($)</label>
+                        <input type="number" id="formMedPrice" class="input-control" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>سعر تكلفة الشراء الأصلي ($)</label>
+                        <input type="number" id="formMedCostPrice" class="input-control" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>الكمية المتاحة حالياً بالمخزن (وحدات)</label>
+                        <input type="number" id="formMedQuantity" class="input-control" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>تاريخ نهاية الصلاحية للمنتج</label>
+                        <input type="date" id="formMedExpiry" class="input-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>رقم التشغيلة / الدفعة (Batch Number)</label>
+                    <input type="text" id="formMedBatch" class="input-control" autocomplete="off">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeMedicineModal()">إلغاء الأمر</button>
+                <button class="btn btn-primary" onclick="submitMedicineForm()">حفظ وتحديث البيانات بالدليل</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea"></div>
+
+    <script>
+        // ===================== إدارة وتأسيس قاعدة البيانات المعززة LOCAL INDEXEDDB =====================
+        let db = null;
+        let currentUser = null;
+        let currentUserRole = null;
+        let activeCart = [];
+        let systemLowStockThreshold = 5;
+
+        function openDatabaseConnection() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PharmacyEnterpriseDB', 4);
+                
+                request.onupgradeneeded = (e) => {
+                    const databaseInstance = e.target.result;
+                    if (!databaseInstance.objectStoreNames.contains('medicines')) {
+                        databaseInstance.createObjectStore('medicines', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!databaseInstance.objectStoreNames.contains('transactions')) {
+                        databaseInstance.createObjectStore('transactions', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!databaseInstance.objectStoreNames.contains('activityLogs')) {
+                        databaseInstance.createObjectStore('activityLogs', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!databaseInstance.objectStoreNames.contains('dailyClosures')) {
+                        databaseInstance.createObjectStore('dailyClosures', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!databaseInstance.objectStoreNames.contains('warehouses')) {
+                        databaseInstance.createObjectStore('warehouses', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!databaseInstance.objectStoreNames.contains('settings')) {
+                        databaseInstance.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                };
+
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = (e) => {
+                    reject(new Error('فشل الاتصال بقاعدة البيانات المحلية الآمنة للملف.'));
+                };
+            });
+        }
+
+        // دالة موحدة لإدراج وتحديث البيانات بالتخزين المحلي
+        function executeDbWrite(storeName, dataObject) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    const req = store.put(dataObject);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = (e) => reject(e.target.error);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        // دالة جلب كافة عناصر مستودع تخزين محدد
+        function executeDbReadAll(storeName) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const store = tx.objectStore(storeName);
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                    req.onerror = (e) => reject(e.target.error);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        function executeDbDelete(storeName, key) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    const req = store.delete(key);
+                    req.onsuccess = () => resolve();
+                    req.onerror = (e) => reject(e.target.error);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        function executeDbClear(storeName) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    const req = store.clear();
+                    req.onsuccess = () => resolve();
+                    req.onerror = (e) => reject(e.target.error);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        // ===================== نظام الأمان وسجل التدقيق الفوري والرقابة AUDIT TRAIL =====================
+        async function logSystemEvent(actionType, actionDetails) {
+            const timestamp = new Date().toISOString();
+            const logEntry = {
+                action: actionType,
+                details: actionDetails,
+                user: currentUser || 'غير مسجل',
+                timestamp: timestamp
+            };
+            try {
+                await executeDbWrite('activityLogs', logEntry);
+            } catch (err) {
+                console.error('فشل في كتابة سجل تدقيق الأمان الخاص بالعملية الحالية للحدث.', err);
+            }
+        }
+
+        // ===================== نظام إشعارات الملاحظات الفورية الواضحة TOASTS =====================
+        function renderToastNotification(message, notificationType = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${notificationType}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ===================== التحكم في واجهة المستخدم والتبديل الجانبي الاحترافي =====================
+        function switchTab(targetTabName) {
+            document.querySelectorAll('.tab-content').forEach(element => element.classList.remove('active'));
+            document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+            
+            const targetedTab = document.getElementById(`tab-${targetTabName}`);
+            if (targetedTab) targetedTab.classList.add('active');
+            
+            const clickedBtn = Array.from(document.querySelectorAll('.sidebar-btn')).find(b => b.getAttribute('onclick').includes(targetTabName));
+            if (clickedBtn) clickedBtn.classList.add('active');
+
+            // تحديث بيانات التبويب المستهدف بشكل لحظي
+            triggerUIRefreshLifecycle();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('themeModePreference', isDark ? 'dark' : 'light');
+        }
+
+        // ===================== التحكم بالهوية الأمنية ونظام التحقق وصلاحيات المحاسب والمشرف =====================
+        document.getElementById('loginButton').addEventListener('click', handleUserAuthenticationProcess);
+        document.getElementById('loginPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleUserAuthenticationProcess(); });
+
+        async function handleUserAuthenticationProcess() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            if ((user === 'admin' && pass === '1234') || (user === 'staff' && pass === '1234')) {
+                currentUser = user;
+                currentUserRole = user; // ربط مبسط للأمان والصلاحيات الحالية لمطوري الواجهة
+                
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appScreen').classList.remove('hidden');
+                
+                document.getElementById('currentUserLabel').textContent = `👤 الحساب: ${currentUserRole === 'admin' ? 'مدير النظام' : 'المحاسب الموظف'}`;
+                
+                // تطبيق جدار الحماية والصلاحيات للأقسام والبيانات الحساسة كالأرباح وسعر الشراء بالدولار
+                enforceUserRolePermissions();
+                
+                await logSystemEvent('تسجيل دخول', 'تم الدخول إلى واجهة النظام التشغيلية الموحدة للمستخدم.');
+                renderToastNotification('أهلاً بك، تم التحقق من الصلاحيات بنجاح.', 'success');
+                
+                // بدء تشغيل وتحديث الواجهة بالبيانات الحقيقية
+                await initializeSystemSettingsConfiguration();
+                await triggerUIRefreshLifecycle();
+                document.getElementById('scanInput').focus();
+            } else {
+                renderToastNotification('خطأ في اسم المستخدم أو كلمة المرور الحالية.', 'error');
+            }
+        }
+
+        function enforceUserRolePermissions() {
+            if (currentUserRole === 'staff') {
+                document.querySelectorAll('.id-admin-only').forEach(el => el.classList.add('hidden'));
+            } else {
+                document.querySelectorAll('.id-admin-only').forEach(el => el.classList.remove('hidden'));
+            }
+        }
+
+        function logout() {
+            logSystemEvent('تسجيل خروج', 'تم الخروج الآمن من الجلسة الحالية.');
+            currentUser = null;
+            currentUserRole = null;
+            activeCart = [];
+            document.getElementById('appScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginPass').value = '';
+            document.getElementById('cartTableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">شاشة البيع فارغة، قم بمسح باركود أو البحث عن الأدوية لإدراجها هنا.</td></tr>`;
+        }
+
+        // ===================== سياق تهيأة البيانات والإعدادات البدئية للنظام =====================
+        async function initializeSystemSettingsConfiguration() {
+            const settings = await executeDbReadAll('settings');
+            const foundThreshold = settings.find(s => s.key === 'lowStockLimit');
+            if (foundThreshold) {
+                systemLowStockThreshold = parseInt(foundThreshold.value) || 5;
+                document.getElementById('cfgLowStockLimit').value = systemLowStockThreshold;
+            }
+            
+            const savedTheme = localStorage.getItem('themeModePreference');
+            if (savedTheme === 'dark') document.body.classList.add('dark');
+        }
+
+        async function saveSystemConfigurationSettings() {
+            if (currentUserRole !== 'admin') return renderToastNotification('عذراً، صلاحية مدير النظام مطلوبة لتعديل هذه الإعدادات الحيوية.', 'error');
+            const val = parseInt(document.getElementById('cfgLowStockLimit').value) || 5;
+            systemLowStockThreshold = val;
+            await executeDbWrite('settings', { key: 'lowStockLimit', value: val });
+            await logSystemEvent('تحديث الإعدادات', `تم تغيير عتبة رصد نقص المخزون لتصبح ${val} وحدات.`);
+            renderToastNotification('تم حفظ الإعدادات الفنية الجديدة للمخزن.', 'success');
+            triggerUIRefreshLifecycle();
+        }
+
+        // ===================== آلية دورة الحياة وتحديث شاشات العرض UI LIFECYCLE =====================
+        async function triggerUIRefreshLifecycle() {
+            try {
+                const medicines = await executeDbReadAll('medicines');
+                const transactions = await executeDbReadAll('transactions');
+                const dailyClosures = await executeDbReadAll('dailyClosures');
+                const logs = await executeDbReadAll('activityLogs');
+
+                // 1. حساب وتحديث الصناديق المالية المتوفرة بالدولار USD
+                let totalFund = 0;
+                transactions.forEach(t => {
+                    if (t.type === 'بيع') totalFund += t.total;
+                    else if (t.type === 'استرجاع') totalFund -= t.total;
+                });
+
+                // حساب رصيد اليوم الحالي أو الوردية التي لم يتم إغلاقها
+                let lastClosureDate = new Date(0);
+                if (dailyClosures.length > 0) {
+                    const sortedClosures = dailyClosures.sort((a, b) => new Date(a.closedAt) - new Date(b.closedAt));
+                    lastClosureDate = new Date(sortedClosures[sortedClosures.length - 1].closedAt);
+                }
+
+                let currentShiftFund = 0;
+                transactions.forEach(t => {
+                    if (new Date(t.datetime) > lastClosureDate) {
+                        if (t.type === 'بيع') currentShiftFund += t.total;
+                        else if (t.type === 'استرجاع') currentShiftFund -= t.total;
+                    }
+                });
+
+                document.getElementById('drawerDisplay').textContent = `صندوق النظام الكلي: ${totalFund.toFixed(2)} $`;
+                document.getElementById('dailyDisplay').textContent = `صندوق الوردية الحالي: ${currentShiftFund.toFixed(2)} $`;
+
+                // 2. تحديث مؤشرات لوحة التحكم Dashboard الإحصائية
+                if (document.getElementById('tab-dashboard').classList.contains('active')) {
+                    document.getElementById('statMedicines').textContent = medicines.length;
+                    document.getElementById('statSales').textContent = transactions.filter(t => t.type === 'بيع').length;
+                    document.getElementById('statReturns').textContent = transactions.filter(t => t.type === 'استرجاع').length;
+                    document.getElementById('statDrawer').textContent = `${totalFund.toFixed(2)} $`;
+
+                    let totalProfit = 0;
+                    transactions.forEach(t => {
+                        if (t.type === 'بيع') totalProfit += (t.profit || 0);
+                        else if (t.type === 'استرجاع') totalProfit -= (t.profit || 0);
+                    });
+                    document.getElementById('statProfit').textContent = `${totalProfit.toFixed(2)} $`;
+
+                    // رصد المخزون المنخفض
+                    const lowStockItems = medicines.filter(m => m.quantity <= systemLowStockThreshold);
+                    const lowStockDiv = document.getElementById('lowStockList');
+                    if (lowStockItems.length === 0) {
+                        lowStockDiv.innerHTML = '<p style="color:var(--success); font-weight:600;">كافة المستويات آمنة ولا توجد نواقص.</p>';
+                    } else {
+                        lowStockDiv.innerHTML = lowStockItems.map(m => `
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
+                                <span>📦 <strong>${m.name}</strong> (${m.category || 'عام'})</span>
+                                <span class="badge badge-danger">المتبقي: ${m.quantity} وحدات فقط</span>
+                            </div>
+                        `).join('');
+                    }
+
+                    // رصد الأدوية المنتهية وقريبة الانتهاء (90 يوماً)
+                    const currentDate = new Date();
+                    const boundaryDate = new Date();
+                    boundaryDate.setDate(boundaryDate.getDate() + 90);
+
+                    const expiredItems = medicines.filter(m => {
+                        if (!m.expiryDate) return false;
+                        const exp = new Date(m.expiryDate);
+                        return exp <= boundaryDate;
+                    });
+
+                    const expStockDiv = document.getElementById('expiredStockList');
+                    if (expiredItems.length === 0) {
+                        expStockDiv.innerHTML = '<p style="color:var(--success); font-weight:600;">لا توجد أدوية منتهية الصلاحية أو قريبة الانتهاء في الـ 90 يوماً القادمة.</p>';
+                    } else {
+                        expStockDiv.innerHTML = expiredItems.map(m => {
+                            const exp = new Date(m.expiryDate);
+                            const isExpired = exp <= currentDate;
+                            return `
+                                <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
+                                    <span>💊 <strong>${m.name}</strong></span>
+                                    <span class="badge ${isExpired ? 'badge-danger' : 'badge-warning'}">${isExpired ? 'منتهي الصلاحية' : 'ينتهي قريباً'}: ${m.expiryDate}</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+
+                    // الأصناف الأكثر مبيعاً وطباعة التقرير المبسط لها
+                    const salesFrequencyMap = {};
+                    transactions.filter(t => t.type === 'بيع').forEach(t => {
+                        if (t.items && Array.isArray(t.items)) {
+                            t.items.forEach(item => {
+                                salesFrequencyMap[item.name] = (salesFrequencyMap[item.name] || 0) + item.qty;
+                            });
+                        } else if (t.medicineId) { // دعم الفواتير التاريخية الأحادية الصنف التوافقية
+                            const matchedMed = medicines.find(m => m.id === t.medicineId);
+                            const medLabel = matchedMed ? matchedMed.name : 'دواء مؤرشف/محذوف';
+                            salesFrequencyMap[medLabel] = (salesFrequencyMap[medLabel] || 0) + (t.quantity || 1);
+                        }
+                    });
+
+                    const sortedSalesList = Object.entries(salesFrequencyMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+                    const topSellingDiv = document.getElementById('topSellingList');
+                    if (sortedSalesList.length === 0) {
+                        topSellingDiv.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:12px;">لم يتم تسجيل حركة مبيعات كافية لتحليل البيانات.</p>';
+                    } else {
+                        topSellingDiv.innerHTML = sortedSalesList.map(([name, qty]) => `
+                            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                                <span>🏷️ ${name}</span>
+                                <span style="font-weight:700; color:var(--primary);">${qty} وحدات مباعة</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // 3. تحديث جدول الأدوية والمخزون
+                if (document.getElementById('tab-medicines').classList.contains('active')) {
+                    refreshMedicinesTable(medicines);
+                }
+
+                // 4. تحديث سجل كشف الفواتير والحركات التاريخية بالتوافقية المطلوبة
+                if (document.getElementById('tab-transactions').classList.contains('active')) {
+                    const tbody = document.querySelector('#transactionsTable tbody');
+                    if (transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لا توجد حركات بيع أو استرجاع مخزنة بسجل النظام حتى الآن.</td></tr>';
+                    } else {
+                        const reversedTxList = [...transactions].reverse();
+                        tbody.innerHTML = reversedTxList.map(t => {
+                            let itemsDetailsText = '';
+                            if (t.items && Array.isArray(t.items)) {
+                                itemsDetailsText = t.items.map(i => `${i.name} (×${i.qty})`).join(', ');
+                            } else {
+                                itemsDetailsText = `صنف مؤرشف رقم: ${t.medicineId} (×${t.quantity || 1})`;
+                            }
+
+                            return `
+                                <tr>
+                                    <td><strong>#${t.id}</strong></td>
+                                    <td><span class="badge ${t.type === 'بيع' ? 'badge-success' : 'badge-danger'}">${t.type}</span></td>
+                                    <td style="max-width:300px; white-space:normal; font-size:0.85rem;">${itemsDetailsText}</td>
+                                    <td><strong>${t.total.toFixed(2)} $</strong></td>
+                                    <td class="id-admin-only" style="color:var(--success); font-weight:600;">${(t.profit || 0).toFixed(2)} $</td>
+                                    <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(t.datetime).toLocaleString('ar-SA')}</td>
+                                    <td>👤 ${t.cashier || 'غير محدد'}</td>
+                                    <td><button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="executeInvoicePrintingWorkflow(${t.id})">🖨️ طباعة السند</button></td>
+                                </tr>
+                            `;
+                        }).join('');
+                        enforceUserRolePermissions();
+                    }
+                }
+
+                // 5. تحديث جدول المستودعات والالتزامات المالية والديون الموردة
+                if (document.getElementById('tab-warehouses').classList.contains('active')) {
+                    await refreshWarehousesSectionUI();
+                }
+
+                // 6. تحديث كشف قيد التسويات والوردية للإغلاقات اليومية
+                if (document.getElementById('tab-closures').classList.contains('active')) {
+                    const tbody = document.querySelector('#closuresTable tbody');
+                    if (dailyClosures.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">لم يتم إجراء أي تسويات مالية أو إغلاق ورديات مسجلة سابقاً.</td></tr>';
+                    } else {
+                        tbody.innerHTML = [...dailyClosures].reverse().map(c => `
+                            <tr>
+                                <td><strong>#${c.id}</strong></td>
+                                <td style="font-size:0.8rem;">${new Date(c.closedAt).toLocaleString('ar-SA')}</td>
+                                <td>${c.totalSales.toFixed(2)} $</td>
+                                <td style="color:var(--danger);">${c.totalReturns.toFixed(2)} $</td>
+                                <td style="font-weight:700; color:var(--primary);">${c.net.toFixed(2)} $</td>
+                                <td>${c.transactionCount || 0} فواتير</td>
+                                <td>👤 ${c.closedBy || 'مدير النظام'}</td>
+                                <td><button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem; color:var(--danger);" onclick="deleteClosureRecord(${c.id})">🗑️ حذف</button></td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+                // 7. تحديث عرض سجل التدقيق الرقابي والأمان
+                if (document.getElementById('tab-logs').classList.contains('active')) {
+                    const tbody = document.querySelector('#logsTable tbody');
+                    if (logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">سجل التدقيق فارغ تماماً.</td></tr>';
+                    } else {
+                        tbody.innerHTML = [...logs].reverse().slice(0, 150).map(l => `
+                            <tr>
+                                <td>${l.id}</td>
+                                <td><span style="font-weight:600; color:var(--primary);">${l.action}</span></td>
+                                <td style="font-size:0.85rem; white-space:normal;">${l.details}</td>
+                                <td>👤 ${l.user}</td>
+                                <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(l.timestamp).toLocaleString('ar-SA')}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+            } catch (err) {
+                renderToastNotification('حدثت مشكلة فنية أثناء دورة تحديث الواجهة والبيانات المالية الحية.', 'error');
+                console.error(err);
+            }
+        }
+
+        // ===================== محرك البحث اللحظي الفوري والذكي وسلة المشتريات لنقطة البيع POS =====================
+        const scanInput = document.getElementById('scanInput');
+        const liveResultsDiv = document.getElementById('liveSearchResults');
+
+        scanInput.addEventListener('input', async () => {
+            const query = scanInput.value.trim().toLowerCase();
+            if (!query) {
+                liveResultsDiv.style.display = 'none';
+                return;
+            }
+
+            const medicines = await executeDbReadAll('medicines');
+            const filtered = medicines.filter(m => 
+                (m.barcode && m.barcode.toLowerCase().includes(query)) ||
+                (m.name && m.name.toLowerCase().includes(query)) ||
+                (m.category && m.category.toLowerCase().includes(query)) ||
+                (m.manufacturer && m.manufacturer.toLowerCase().includes(query))
+            );
+
+            if (filtered.length === 0) {
+                liveResultsDiv.innerHTML = '<div style="padding:12px; text-align:center; color:var(--text-muted);">لا توجد أصناف مطابقة للبحث الحالي بالدليل.</div>';
+            } else {
+                liveResultsDiv.innerHTML = filtered.slice(0, 10).map(m => `
+                    <div class="search-item" onclick="addItemToActiveSalesCart(${m.id})">
+                        <div>
+                            <strong>${m.name}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${m.category || 'عام'})</span>
+                            <br><span style="font-size:0.75rem; color:var(--text-muted);">الباركود: ${m.barcode || '—'} | الكمية المتاحة: ${m.quantity}</span>
+                        </div>
+                        <div style="font-weight:700; color:var(--gold);">${m.price.toFixed(2)} $</div>
+                    </div>
+                `).join('');
+            }
+            liveResultsDiv.style.display = 'block';
+        });
+
+        // دعم الإدخال عبر ماسح الباركود السريع عند الضغط على Enter
+        scanInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = scanInput.value.trim();
+                if (!query) return;
+
+                const medicines = await executeDbReadAll('medicines');
+            const filtered = medicines.filter(m => 
+                (m.barcode && m.barcode.toLowerCase().includes(query)) ||
+                (m.name && m.name.toLowerCase().includes(query)) ||
+                (m.category && m.category.toLowerCase().includes(query)) ||
+                (m.manufacturer && m.manufacturer.toLowerCase().includes(query))
+            );
+
+            if (filtered.length === 0) {
+                liveResultsDiv.innerHTML = '<div style="padding:12px; text-align:center; color:var(--text-muted);">لا توجد أصناف مطابقة للبحث الحالي بالدليل.</div>';
+            } else {
+                liveResultsDiv.innerHTML = filtered.slice(0, 10).map(m => `
+                    <div class="search-item" onclick="addItemToActiveSalesCart(${m.id})">
+                        <div>
+                            <strong>${m.name}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${m.category || 'عام'})</span>
+                            <br><span style="font-size:0.75rem; color:var(--text-muted);">الباركود: ${m.barcode || '—'} | الكمية المتاحة: ${m.quantity}</span>
+                        </div>
+                        <div style="font-weight:700; color:var(--gold);">${m.price.toFixed(2)} $</div>
+                    </div>
+                `).join('');
+            }
+            liveResultsDiv.style.display = 'block';
+        });
+
+        // دعم الإدخال عبر ماسح الباركود السريع عند الضغط على Enter
+        scanInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = scanInput.value.trim();
+                if (!query) return;
+
+                const medicines = await executeDbReadAll('medicines');
+                // البحث الدقيق أولاً بالباركود
+                let matched = medicines.find(m => m.barcode && m.barcode.trim() === query);
+                if (!matched) {
+                    // البحث الجزئي أو بالاسم في حال تعذر الدقة المطلقة للباركود
+                    matched = medicines.find(m => m.name.toLowerCase().includes(query.toLowerCase()));
+                }
+
+                if (matched) {
+                    addItemToActiveSalesCart(matched.id);
+                    scanInput.value = '';
+                    liveResultsDiv.style.display = 'none';
+                } else {
+                    renderToastNotification('لم يتم العثور على أي صنف مطابق للرمز الممسوح.', 'error');
+                }
+            }
+        });
+
+        // إغلاق قائمة البحث المنسدلة عند الضغط في أي مكان خارجي
+        document.addEventListener('click', (e) => {
+            if (!scanInput.contains(e.target) && !liveResultsDiv.contains(e.target)) {
+                liveResultsDiv.style.display = 'none';
+            }
+        });
+
+        async function addItemToActiveSalesCart(medicineId) {
+            const medicines = await executeDbReadAll('medicines');
+            const selectedMed = medicines.find(m => m.id === medicineId);
+            if (!selectedMed) return;
+
+            const existingItem = activeCart.find(item => item.id === selectedMed.id);
+            if (existingItem) {
+                if (existingItem.qty + 1 > selectedMed.quantity && document.getElementById('posTxType').value === 'بيع') {
+                    renderToastNotification(`عذراً، الكمية المطلوبة تتجاوز المخزون الفعلي المتاح لهذا الصنف (${selectedMed.quantity} وحدات).`, 'warning');
+                    return;
+                }
+                existingItem.qty += 1;
+            } else {
+                if (selectedMed.quantity <= 0 && document.getElementById('posTxType').value === 'بيع') {
+                    renderToastNotification('الصنف الطبي الحالي نافد تماماً من مستودع الصيدلية الحقيقي.', 'warning');
+                    return;
+                }
+                activeCart.push({
+                    id: selectedMed.id,
+                    name: selectedMed.name,
+                    barcode: selectedMed.barcode,
+                    price: selectedMed.price,
+                    costPrice: selectedMed.costPrice || 0,
+                    qty: 1,
+                    stockLimit: selectedMed.quantity
+                });
+            }
+
+            scanInput.value = '';
+            liveResultsDiv.style.display = 'none';
+            renderActiveSalesCartTableUI();
+            renderToastNotification('تم إدراج الصنف بنجاح داخل الفاتورة النشطة.', 'success');
+        }
+
+        function renderActiveSalesCartTableUI() {
+            const tbody = document.getElementById('cartTableBody');
+            if (activeCart.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">شاشة البيع فارغة، قم بمسح باركود أو البحث عن الأدوية لإدراجها هنا.</td></tr>';
+                updateCartTotals();
+                return;
+            }
+
+            tbody.innerHTML = activeCart.map((item, index) => `
+                <tr>
+                    <td><strong>${item.name}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${item.barcode || '—'}</span></td>
+                    <td>${item.price.toFixed(2)} $</td>
+                    <td><span class="badge ${item.stockLimit <= systemLowStockThreshold ? 'badge-danger' : 'badge-success'}">${item.stockLimit} وحدة</span></td>
+                    <td>
+                        <input type="number" class="input-control" style="padding:4px 8px; width:80px; text-align:center;" min="1" value="${item.qty}" onchange="updateCartItemQuantityByIndex(${index}, this.value)">
+                    </td>
+                    <td style="font-weight:700; color:var(--primary);">${(item.price * item.qty).toFixed(2)} $</td>
+                    <td><button class="btn btn-outline" style="color:var(--danger); border-color:transparent; padding:4px;" onclick="removeCartItemByIndex(${index})">🗑️</button></td>
+                </tr>
+            `).join('');
+
+            updateCartTotals();
+        }
+
+        function updateCartItemQuantityByIndex(index, value) {
+            const parsedQuantity = parseInt(value) || 1;
+            const currentTxType = document.getElementById('posTxType').value;
+            
+            if (parsedQuantity > activeCart[index].stockLimit && currentTxType === 'بيع') {
+                renderToastNotification(`عذراً، الكمية المحددة تتجاوز الرصيد المتوفر بالمخزن (${activeCart[index].stockLimit}).`, 'warning');
+                activeCart[index].qty = activeCart[index].stockLimit;
+            } else {
+                activeCart[index].qty = parsedQuantity;
+            }
+            renderActiveSalesCartTableUI();
+        }
+
+        function removeCartItemByIndex(index) {
+            activeCart.splice(index, 1);
+            renderActiveSalesCartTableUI();
+        }
+
+        function clearCart() {
+            activeCart = [];
+            renderActiveSalesCartTableUI();
+        }
+
+        function updateCartTotals() {
+            let totalAmount = 0;
+            let totalProfit = 0;
+            let totalQty = 0;
+
+            activeCart.forEach(item => {
+                const subtotal = item.price * item.qty;
+                const subProfit = (item.price - item.costPrice) * item.qty;
+                totalAmount += subtotal;
+                totalProfit += subProfit;
+                totalQty += item.qty;
+            });
+
+            document.getElementById('posItemCount').textContent = activeCart.length;
+            document.getElementById('posTotalQty').textContent = totalQty;
+            document.getElementById('posTotalProfit').textContent = `${totalProfit.toFixed(2)} $`;
+            document.getElementById('posInvoiceTotal').textContent = `${totalAmount.toFixed(2)} $`;
+        }
+
+        async function submitCartInvoice() {
+            if (activeCart.length === 0) {
+                renderToastNotification('لا يمكن معالجة فاتورة خالية من المستندات والأصناف الطبية.', 'warning');
+                return;
+            }
+
+            try {
+                const currentTxType = document.getElementById('posTxType').value;
+                const medicinesList = await executeDbReadAll('medicines');
+                
+                let invoiceTotalAmount = 0;
+                let invoiceTotalProfit = 0;
+
+                // التوثيق والحفظ بالمعاملات وتخفيض المخزون
+                for (const cartItem of activeCart) {
+                    const matchedMedicine = medicinesList.find(m => m.id === cartItem.id);
+                    if (!matchedMedicine) throw new Error(`الصنف ${cartItem.name} لم يعد متوفراً بالدليل الحقيقي لقاعدة البيانات.`);
+
+                    if (currentTxType === 'بيع') {
+                        if (matchedMedicine.quantity < cartItem.qty) {
+                            throw new Error(`نفد المخزن المتاح من ${cartItem.name} أثناء المعالجة الحالية.`);
+                        }
+                        matchedMedicine.quantity -= cartItem.qty;
+                    } else if (currentTxType === 'استرجاع') {
+                        matchedMedicine.quantity += cartItem.qty;
+                    }
+
+                    matchedMedicine.updatedAt = new Date().toISOString();
+                    await executeDbWrite('medicines', matchedMedicine);
+
+                    invoiceTotalAmount += cartItem.price * cartItem.qty;
+                    invoiceTotalProfit += (cartItem.price - cartItem.costPrice) * cartItem.qty;
+                }
+
+                const transactionRecord = {
+                    type: currentTxType,
+                    items: JSON.parse(JSON.stringify(activeCart)), // حفظ النسخة العميقة للأصناف المدرجة بالفاتورة
+                    total: invoiceTotalAmount,
+                    profit: invoiceTotalProfit,
+                    datetime: new Date().toISOString(),
+                    cashier: currentUser || 'مجهول'
+                };
+
+                const savedTxId = await executeDbWrite('transactions', transactionRecord);
+                await logSystemEvent('قيد الفاتورة', `تم إصدار سند ${currentTxType} رقم الفاتورة الآلي #${savedTxId} بقيمة ${invoiceTotalAmount.toFixed(2)} $`);
+                
+                renderToastNotification(`تم قيد وحفظ الفاتورة الحالية بنجاح تحت الرقم التسلسلي #${savedTxId}`, 'success');
+                
+                // تصفير شاشة المعاملة وتحديث الواجهات
+                activeCart = [];
+                renderActiveSalesCartTableUI();
+                await triggerUIRefreshLifecycle();
+
+                // توجيه تلقائي لطباعة الفاتورة والتحقق من رغبة المستخدم
+                if (confirm(`تم حفظ الفاتورة بنجاح. هل ترغب في طباعة السند المالي الحسابي الآن؟`)) {
+                    executeInvoicePrintingWorkflow(savedTxId);
+                }
+
+            } catch (err) {
+                renderToastNotification(`فشلت المعالجة: ${err.message}`, 'error');
+                console.error(err);
+            }
+        }
+
+        // ===================== آلية طباعة الفواتير الاحترافية المباشرة والمحاسبية =====================
+        async function executeInvoicePrintingWorkflow(transactionId) {
+            try {
+                const txs = await executeDbReadAll('transactions');
+                const matchedTx = txs.find(t => t.id === transactionId);
+                if (!matchedTx) return renderToastNotification('السند المالي المطلوب غير متوفر بالأرشيف.', 'error');
+
+                const printArea = document.getElementById('printArea');
+                
+                let itemsListRowsHtml = '';
+                if (matchedTx.items && Array.isArray(matchedTx.items)) {
+                    itemsListRowsHtml = matchedTx.items.map(i => `
+                        <tr>
+                            <td style="border-bottom:1px solid #ccc; padding:6px 0;">${i.name}</td>
+                            <td style="border-bottom:1px solid #ccc; padding:6px 0; text-align:center;">${i.qty}</td>
+                            <td style="border-bottom:1px solid #ccc; padding:6px 0; text-align:left;">${i.price.toFixed(2)} $</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    itemsListRowsHtml = `
+                        <tr>
+                            <td style="border-bottom:1px solid #ccc; padding:6px 0;">دواء مؤرشف/أحادي رقم ${matchedTx.medicineId}</td>
+                            <td style="border-bottom:1px solid #ccc; padding:6px 0; text-align:center;">${matchedTx.quantity || 1}</td>
+                            <td style="border-bottom:1px solid #ccc; padding:6px 0; text-align:left;">${matchedTx.total.toFixed(2)} $</td>
+                        </tr>
+                    `;
+                }
+
+                printArea.innerHTML = `
+                    <div style="font-family:monospace; direction:rtl; text-align:right; max-width:280px; margin:0 auto; color:#000;">
+                        <h2 style="text-align:center; margin-bottom:4px;">صيدلية الإيمان التجارية</h2>
+                        <p style="text-align:center; font-size:0.8rem; margin-bottom:12px;">سند مالي رسمي وفاتورة عميل</p>
+                        <hr style="border:1px dashed #000;">
+                        <p style="font-size:0.8rem; margin:4px 0;"><strong>رقم الفاتورة:</strong> # ${matchedTx.id}</p>
+                        <p style="font-size:0.8rem; margin:4px 0;"><strong>طبيعة السند:</strong> ${matchedTx.type}</p>
+                        <p style="font-size:0.8rem; margin:4px 0;"><strong>التاريخ:</strong> ${new Date(matchedTx.datetime).toLocaleString('ar-SA')}</p>
+                        <p style="font-size:0.8rem; margin:4px 0;"><strong>المحاسب المسؤول:</strong> ${matchedTx.cashier}</p>
+                        <hr style="border:1px dashed #000; margin:10px 0;">
+                        <table style="width:100%; font-size:0.8rem; border-collapse:collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:right;">الصنف</th>
+                                    <th style="text-align:center;">الكمية</th>
+                                    <th style="text-align:left;">السعر</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsListRowsHtml}
+                            </tbody>
+                        </table>
+                        <hr style="border:1px dashed #000; margin:10px 0;">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.05rem;">
+                            <span>المجموع الصافي المطالب به:</span>
+                            <span>${matchedTx.total.toFixed(2)} $</span>
+                        </div>
+                        <hr style="border:1px dashed #000; margin:12px 0;">
+                        <p style="text-align:center; font-size:0.75rem;">شكراً لتعاملكم معنا. الدواء لا يرد ولا يستبدل إلا وفق القوانين الصحية.</p>
+                    </div>
+                `;
+
+                window.print();
+            } catch (err) {
+                renderToastNotification('فشل بدء معالج وحدة طباعة المستندات الحسابية للهاتف أو الحاسوب.', 'error');
+            }
+        }
+
+        // ===================== معالجة وإدارة جرد ودليل المخزون والأدوية (Medicines Logic) =====================
+        function refreshMedicinesTable(preFetchedData = null) {
+            const tbody = document.querySelector('#medicinesTable tbody');
+            const searchVal = document.getElementById('medSearchInput').value.trim().toLowerCase();
+
+            const action = async () => {
+                const medicines = preFetchedData || await executeDbReadAll('medicines');
+                const filtered = medicines.filter(m => 
+                    (m.name && m.name.toLowerCase().includes(searchVal)) ||
+                    (m.barcode && m.barcode.toLowerCase().includes(searchVal)) ||
+                    (m.category && m.category.toLowerCase().includes(searchVal)) ||
+                    (m.manufacturer && m.manufacturer.toLowerCase().includes(searchVal))
+                );
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">لا توجد أصناف طبية مدرجة مطابقة لمعايير الفلترة الحالية.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map(m => {
+                    const profitUnit = m.price - (m.costPrice || 0);
+                    return `
+                        <tr>
+                            <td><code>${m.barcode || '—'}</code></td>
+                            <td><strong>${m.name}</strong></td>
+                            <td><span style="font-size:0.8rem; color:var(--text-muted);">${m.category || 'غير مصنف'}</span></td>
+                            <td>${m.manufacturer || '—'}</td>
+                            <td><strong>${m.price.toFixed(2)} $</strong></td>
+                            <td class="id-admin-only">${(m.costPrice || 0).toFixed(2)} $</td>
+                            <td class="id-admin-only" style="color:var(--success); font-weight:600;">${profitUnit.toFixed(2)} $</td>
+                            <td><span class="badge ${m.quantity <= systemLowStockThreshold ? 'badge-danger' : 'badge-success'}">${m.quantity} وحدات</span></td>
+                            <td><span style="font-size:0.8rem;">${m.expiryDate || '—'}</span></td>
+                            <td>
+                                <div style="display:flex; gap:4px;">
+                                    <button class="btn btn-outline id-admin-only" style="padding:4px 8px; font-size:0.75rem;" onclick="openMedicineModal(${m.id})">⚙️ تعديل</button>
+                                    <button class="btn btn-danger id-admin-only" style="padding:4px 8px; font-size:0.75rem;" onclick="executeMedicineDeletionWorkflow(${m.id})">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                enforceUserRolePermissions();
+            };
+
+            action();
+        }
+
+        async function openMedicineModal(medicineId = null) {
+            if (currentUserRole !== 'admin') return renderToastNotification('عذراً، لا تمتلك الصلاحيات الإدارية المطلوبة للتعديل والدخول لتنظيم المخزون دليلياً.', 'error');
+            
+            if (medicineId) {
+                const meds = await executeDbReadAll('medicines');
+                const target = meds.find(m => m.id === medicineId);
+                if (target) {
+                    document.getElementById('formMedId').value = target.id;
+                    document.getElementById('formMedBarcode').value = target.barcode || '';
+                    document.getElementById('formMedName').value = target.name || '';
+                    document.getElementById('formMedCategory').value = target.category || '';
+                    document.getElementById('formMedManufacturer').value = target.manufacturer || '';
+                    document.getElementById('formMedPrice').value = target.price || '';
+                    document.getElementById('formMedCostPrice').value = target.costPrice || '';
+                    document.getElementById('formMedQuantity').value = target.quantity || '';
+                    document.getElementById('formMedExpiry').value = target.expiryDate || '';
+                    document.getElementById('formMedBatch').value = target.batchNumber || '';
+                    document.getElementById('medModalTitle').textContent = '⚙️ تعديل بيانات صنف موجود بالدليل';
+                }
+            } else {
+                document.getElementById('formMedId').value = '';
+                document.getElementById('formMedBarcode').value = '';
+                document.getElementById('formMedName').value = '';
+                document.getElementById('formMedCategory').value = '';
+                document.getElementById('formMedManufacturer').value = '';
+                document.getElementById('formMedPrice').value = '';
+                document.getElementById('formMedCostPrice').value = '';
+                document.getElementById('formMedQuantity').value = '';
+                document.getElementById('formMedExpiry').value = '';
+                document.getElementById('formMedBatch').value = '';
+                document.getElementById('medModalTitle').textContent = '➕ إدراج صنف طبي جديد كلياً بالدليل';
+            }
+
+            document.getElementById('medicineModal').classList.remove('hidden');
+        }
+
+        function closeMedicineModal() {
+            document.getElementById('medicineModal').classList.add('hidden');
+        }
+
+        async function submitMedicineForm() {
+            const id = document.getElementById('formMedId').value;
+            const barcode = document.getElementById('formMedBarcode').value.trim();
+            const name = document.getElementById('formMedName').value.trim();
+            const category = document.getElementById('formMedCategory').value.trim();
+            const manufacturer = document.getElementById('formMedManufacturer').value.trim();
+            const price = parseFloat(document.getElementById('formMedPrice').value) || 0;
+            const costPrice = parseFloat(document.getElementById('formMedCostPrice').value) || 0;
+            const quantity = parseInt(document.getElementById('formMedQuantity').value) || 0;
+            const expiryDate = document.getElementById('formMedExpiry').value;
+            const batchNumber = document.getElementById('formMedBatch').value.trim();
+
+            if (!name) return renderToastNotification('يرجى كتابة الاسم التجاري/العلمي المعتمد للصنف بشكل إلزامي.', 'warning');
+
+            const payload = {
+                barcode, name, category, manufacturer, price, costPrice, quantity, expiryDate, batchNumber,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (id) {
+                payload.id = parseInt(id);
+                await executeDbWrite('medicines', payload);
+                await logSystemEvent('تعديل مخزون', `تم تحديث بيانات الصنف الحيوية لـ: ${name}`);
+            } else {
+                payload.createdAt = new Date().toISOString();
+                await executeDbWrite('medicines', payload);
+                await logSystemEvent('إضافة مخزون', `تم إدراج صنف طبي جديد بالدليل باسم: ${name}`);
+            }
+
+            closeMedicineModal();
+            renderToastNotification('تم قيد البيانات وتحديث مستودع الأدوية الموحد بنجاح.', 'success');
+            await triggerUIRefreshLifecycle();
+        }
+
+        async function executeMedicineDeletionWorkflow(medicineId) {
+            if (currentUserRole !== 'admin') return renderToastNotification('تأكيد الصلاحية مطلوب لحذف الأصناف من الدليل.', 'error');
+            const meds = await executeDbReadAll('medicines');
+            const target = meds.find(m => m.id === medicineId);
+            if (!target) return;
+
+            if (confirm(`هل أنت متأكد مطلقاً من إزالة الصنف الدوائي: "${target.name}" بشكل كامل من سجلات النظام؟`)) {
+                await executeDbDelete('medicines', medicineId);
+                await logSystemEvent('حذف صنف', `تم حذف الدواء ${target.name} نهائياً من قاعدة البيانات.`);
+                renderToastNotification('تم مسح وإسقاط الصنف الطبي بنجاح.', 'success');
+                await triggerUIRefreshLifecycle();
+            }
+        }
+
+        // ===================== معالجة وتصدير واستيراد ملفات الإكسيل EXCEL PORTABILITY =====================
+        async function exportMedicinesExcel() {
+            const data = await executeDbReadAll('medicines');
+            if (data.length === 0) return renderToastNotification('دليل المخازن فارغ، لا توجد بيانات كافية للتصدير.', 'warning');
+            
+            const transformed = data.map(m => ({
+                'الباركود': m.barcode || '',
+                'الاسم العلمي والتجاري': m.name || '',
+                'التصنيف': m.category || '',
+                'الشركة المصنعة': m.manufacturer || '',
+                'سعر البيع للمستهلك': m.price || 0,
+                'سعر تكلفة الشراء': m.costPrice || 0,
+                'الكمية المتوفرة': m.quantity || 0,
+                'تاريخ الصلاحية': m.expiryDate || '',
+                'رقم التشغيلة': m.batchNumber || ''
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(transformed);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'الأدوية والمخزون المتاح');
+            XLSX.writeFile(wb, `Pharmacy_Medicines_Inventory_${new Date().toISOString().slice(0,10)}.xlsx`);
+            renderToastNotification('تم تصدير ورقة العمل وصيغة الإكسيل بنجاح.', 'success');
+        }
+
+        async function importMedicinesExcel(e) {
+            if (currentUserRole !== 'admin') return renderToastNotification('الصلاحيات غير كافية لعمليات دمج البيانات.', 'error');
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const arrayBuffer = evt.target.result;
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
+
+                    if (sheetData.length === 0) throw new Error('الملف فارغ ولا يحتوي على تراكيب حقول بيانات معالجة.');
+
+                    const allCurrentMeds = await executeDbReadAll('medicines');
+                    let insertedCount = 0;
+                    let updatedCount = 0;
+
+                    for (const row of sheetData) {
+                        const barcode = (row['الباركود'] || '').toString().trim();
+                        const name = (row['الاسم العلمي والتجاري'] || '').toString().trim();
+                        if (!name) continue;
+
+                        const price = parseFloat(row['سعر البيع للمستهلك']) || 0;
+                        const costPrice = parseFloat(row['سعر تكلفة الشراء']) || 0;
+                        const quantity = parseInt(row['الكمية المتوفرة']) || 0;
+                        const category = (row['التصنيف'] || '').toString().trim();
+                        const manufacturer = (row['الشركة المصنعة'] || '').toString().trim();
+                        const expiryDate = (row['تاريخ الصلاحية'] || '').toString().trim();
+                        const batchNumber = (row['رقم التشغيلة'] || '').toString().trim();
+
+                        // فحص وجود مسبق لتجنب التكرار والدمج بالحدث
+                        let matched = null;
+                        if (barcode) matched = allCurrentMeds.find(m => m.barcode === barcode);
+                        if (!matched) matched = allCurrentMeds.find(m => m.name.toLowerCase() === name.toLowerCase());
+
+                        if (matched) {
+                            matched.price = price || matched.price;
+                            matched.costPrice = costPrice || matched.costPrice;
+                            matched.quantity = quantity !== undefined ? quantity : matched.quantity;
+                            matched.category = category || matched.category;
+                            matched.manufacturer = manufacturer || matched.manufacturer;
+                            matched.expiryDate = expiryDate || matched.expiryDate;
+                            matched.batchNumber = batchNumber || matched.batchNumber;
+                            matched.updatedAt = new Date().toISOString();
+                            await executeDbWrite('medicines', matched);
+                            updatedCount++;
+                        } else {
+                            await executeDbWrite('medicines', {
+                                barcode, name, category, manufacturer, price, costPrice, quantity, expiryDate, batchNumber,
+                                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+                            });
+                            insertedCount++;
+                        }
+                    }
+
+                    await logSystemEvent('استيراد مخزون إكسيل', `تم تحديث ${updatedCount} صنف و إدراج ${insertedCount} منتج جديد بالدليل.`);
+                    renderToastNotification(`تم إتمام الاستيراد الممنهج: إدراج ${insertedCount} جديد، وتحديث ${updatedCount} صنف مسبق.`, 'success');
+                    await triggerUIRefreshLifecycle();
+                } catch (err) {
+                    renderToastNotification(`فشل تحليل وقراءة ملف الإكسيل المختار: ${err.message}`, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
+        }
+
+        // ===================== معالجة وإدارة قطاع الحسابات، ديون الشركات والمستودعات =====================
+        async function refreshWarehousesSectionUI() {
+            const warehouses = await executeDbReadAll('warehouses');
+            const tbody = document.getElementById('warehousesTableBody');
+            
+            if (warehouses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد مستودعات أو التزامات مالية للموردين مقيدة حالياً.</td></tr>';
+                document.getElementById('whTotalDebit').textContent = '0.00 $';
+                document.getElementById('whTotalCredit').textContent = '0.00 $';
+                document.getElementById('whTotalPayments').textContent = '0.00 $';
+                document.getElementById('whTotalBalance').textContent = '0.00 $';
+                return;
+            }
+
+            tbody.innerHTML = warehouses.map((w, index) => {
+                const calculatedBalance = (w.debit || 0) - (w.credit || 0) - (w.payments || 0);
+                return `
+                    <tr data-wh-id="${w.id || ''}">
+                        <td><input type="text" class="input-control wh-ui-name" style="padding:4px 8px;" value="${w.name || ''}" placeholder="اسم الشركة / المورد"></td>
+                        <td><input type="number" class="input-control wh-ui-debit" style="padding:4px 8px; width:110px;" step="0.01" value="${w.debit || 0}" onchange="recalculateWarehouseFinancialSummaryRows()"></td>
+                        <td><input type="number" class="input-control wh-ui-credit" style="padding:4px 8px; width:110px;" step="0.01" value="${w.credit || 0}" onchange="recalculateWarehouseFinancialSummaryRows()"></td>
+                        <td><input type="number" class="input-control wh-ui-payments" style="padding:4px 8px; width:110px;" step="0.01" value="${w.payments || 0}" onchange="recalculateWarehouseFinancialSummaryRows()"></td>
+                        <td class="wh-ui-computed-balance" style="font-weight:700; color:var(--gold);">${calculatedBalance.toFixed(2)} $</td>
+                        <td><button class="btn btn-outline" style="color:var(--danger); padding:4px 8px;" onclick="removeWarehouseUiRow(this, ${w.id || null})">🗑️ مسح</button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            recalculateWarehouseFinancialSummaryRows();
+        }
+
+        function addWarehouseRow() {
+            const tbody = document.getElementById('warehousesTableBody');
+            const noDataTr = tbody.querySelector('td[colspan="6"]');
+            if (noDataTr) tbody.innerHTML = '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <tr data-wh-id="">
+                    <td><input type="text" class="input-control wh-ui-name" style="padding:4px 8px;" value="" placeholder="اسم الشركة / المورد الجديد"></td>
+                    <td><input type="number" class="input-control wh-ui-debit" style="padding:4px 8px; width:110px;" step="0.01" value="0" onchange="recalculateWarehouseFinancialSummaryRows()"></td>
+                    <td><input type="number" class="input-control wh-ui-credit" style="padding:4px 8px; width:110px;" step="0.01" value="0" onchange="recalculateWarehouseFinancialSummaryRows()"></td>
+                    <td><input type="number" class="input-control wh-ui-payments" style="padding:4px 8px; width:110px;" step="0.01" value="0" onchange="recalculateWarehouseFinancialSummaryRows()"></td>
+                    <td class="wh-ui-computed-balance" style="font-weight:700; color:var(--gold);">0.00 $</td>
+                    <td><button class="btn btn-outline" style="color:var(--danger); padding:4px 8px;" onclick="removeWarehouseUiRow(this, null)">🗑️ مسح</button></td>
+                </tr>
+            `;
+            tbody.appendChild(tr);
+            recalculateWarehouseFinancialSummaryRows();
+        }
+
+        function recalculateWarehouseFinancialSummaryRows() {
+            let totalDebit = 0, totalCredit = 0, totalPayments = 0, totalBalance = 0;
+            const rows = document.querySelectorAll('#warehousesTableBody tr');
+
+            rows.forEach(row => {
+                const nameInp = row.querySelector('.wh-ui-name');
+                if (!nameInp) return;
+
+                const debit = parseFloat(row.querySelector('.wh-ui-debit').value) || 0;
+                const credit = parseFloat(row.querySelector('.wh-ui-credit').value) || 0;
+                const payments = parseFloat(row.querySelector('.wh-ui-payments').value) || 0;
+                const balance = debit - credit - payments;
+
+                row.querySelector('.wh-ui-computed-balance').textContent = `${balance.toFixed(2)} $`;
+
+                totalDebit += debit;
+                totalCredit += credit;
+                totalPayments += payments;
+                totalBalance += balance;
+            });
+
+            document.getElementById('whTotalDebit').textContent = `${totalDebit.toFixed(2)} $`;
+            document.getElementById('whTotalCredit').textContent = `${totalCredit.toFixed(2)} $`;
+            document.getElementById('whTotalPayments').textContent = `${totalPayments.toFixed(2)} $`;
+            document.getElementById('whTotalBalance').textContent = `${totalBalance.toFixed(2)} $`;
+        }
+
+        async function removeWarehouseUiRow(btnElement, warehouseId) {
+            if (currentUserRole !== 'admin') return renderToastNotification('صلاحيات المشرف مطلوبة لحذف قيود حسابات الشركات.', 'error');
+            if (warehouseId) {
+                if (!confirm('هل ترغب في إزالة قيد حساب هذا المورد نهائياً من قاعدة البيانات؟')) return;
+                await executeDbDelete('warehouses', warehouseId);
+                await logSystemEvent('حذف مورد', `تم حذف سجل المورد مؤرشف تحت الرقم الآلي #${warehouseId}`);
+                renderToastNotification('تم حذف المورد بنجاح.', 'success');
+            }
+            btnElement.closest('tr').remove();
+            recalculateWarehouseFinancialSummaryRows();
+        }
+
+        async function saveWarehousesData() {
+            const rows = document.querySelectorAll('#warehousesTableBody tr');
+            const recordsToSave = [];
+            let errorStatus = false;
+
+            rows.forEach(row => {
+                const nameInp = row.querySelector('.wh-ui-name');
+                if (!nameInp) return;
+
+                const name = nameInp.value.trim();
+                const debit = parseFloat(row.querySelector('.wh-ui-debit').value) || 0;
+                const credit = parseFloat(row.querySelector('.wh-ui-credit').value) || 0;
+                const payments = parseFloat(row.querySelector('.wh-ui-payments').value) || 0;
+                const rawId = row.getAttribute('data-wh-id');
+
+                if (!name) {
+                    errorStatus = true;
+                    return;
+                }
+
+                const record = { name, debit, credit, payments, updatedAt: new Date().toISOString() };
+                if (rawId) record.id = parseInt(rawId);
+                recordsToSave.push(record);
+            });
+
+            if (errorStatus) {
+                renderToastNotification('يرجى كتابة أسماء المستودعات/الشركات بشكل صحيح قبل الحفظ الحسابي.', 'warning');
+                return;
+            }
+
+            // الحفظ المتتالي داخل التخزين المحلي الآمن
+            for (const rec of recordsToSave) {
+                await executeDbWrite('warehouses', rec);
+            }
+
+            await logSystemEvent('تحديث مستودعات', 'تم حفظ وتعديل مصفوفة سجلات حسابات الموردين والشركات.');
+            renderToastNotification('تم حفظ وتوثيق الديون والحسابات المعدلة بنجاح.', 'success');
+            await triggerUIRefreshLifecycle();
+        }
+
+        async function exportWarehousesExcel() {
+            const warehouses = await executeDbReadAll('warehouses');
+            if (warehouses.length === 0) return renderToastNotification('لا توجد بيانات مستودعات لتصديرها.', 'warning');
+
+            const transformed = warehouses.map(w => ({
+                'اسم المستودع / الشركة الموردة': w.name || '',
+                'مستحقات للمستودع (دائن)': w.debit || 0,
+                'مستحقات على المستودع (مدين)': w.credit || 0,
+                'الدفعات المالية المسددة': w.payments || 0,
+                'الرصيد المعلق': (w.debit || 0) - (w.credit || 0) - (w.payments || 0)
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(transformed);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'كشف ديون الشركات والمستودعات');
+            XLSX.writeFile(wb, `Pharmacy_Warehouses_Ledger_${new Date().toISOString().slice(0,10)}.xlsx`);
+            renderToastNotification('تم تصدير ورقة عمل المستودعات بنجاح.', 'success');
+        }
+
+        async function importWarehousesExcel(e) {
+            if (currentUserRole !== 'admin') return renderToastNotification('غير مصرح لإجراء استيراد الحسابات المالية الحيوية.', 'error');
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const workbook = XLSX.read(evt.target.result, { type: 'array' });
+                    const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    
+                    if (sheetData.length === 0) throw new Error('الملف لا يحتوي على قيود حسابية صحيحة.');
+
+                    await executeDbClear('warehouses'); // إعادة البناء الشامل للحسابات لضمان مطابقة ورقة الإكسيل للمجاميع الإدارية
+
+                    for (const row of sheetData) {
+                        const name = (row['اسم المستودع / الشركة الموردة'] || '').toString().trim();
+                        if (!name) continue;
+
+                        const debit = parseFloat(row['مستحقات للمستودع (دائن)']) || 0;
+                        const credit = parseFloat(row['مستحقات على المستودع (مدين)']) || 0;
+                        const payments = parseFloat(row['الدفعات المالية المسددة']) || 0;
+
+                        await executeDbWrite('warehouses', { name, debit, credit, payments, updatedAt: new Date().toISOString() });
+                    }
+
+                    await logSystemEvent('استيراد حسابات موردين', `تم إحلال وتحديث سجل حسابات الشركات الموردة عبر ورقة عمل خارجية.`);
+                    renderToastNotification('تم دمج وتطبيق القيود الحسابية المستوردة بنجاح.', 'success');
+                    await triggerUIRefreshLifecycle();
+                } catch (err) {
+                    renderToastNotification(`فشل الاستيراد الممنهج: ${err.message}`, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
+        }
+
+        // ===================== معالجة وإدارة نظام التسويات المالية والاقفال اليومي للورديات =====================
+        async function triggerDailyClosureProcess() {
+            if (currentUserRole !== 'admin') return renderToastNotification('عذراً، يتطلب تنفيذ تسوية الصناديق وإغلاق الوردية صلاحية المشرف المالي.', 'error');
+            
+            try {
+                const transactions = await executeDbReadAll('transactions');
+                const closures = await executeDbReadAll('dailyClosures');
+                
+                let lastClosureTimestamp = new Date(0);
+                if (closures.length > 0) {
+                    const sorted = closures.sort((a,b) => new Date(a.closedAt) - new Date(b.closedAt));
+                    lastClosureTimestamp = new Date(sorted[sorted.length - 1].closedAt);
+                }
+
+                let shiftSalesTotal = 0;
+                let shiftReturnsTotal = 0;
+                let shiftTxCount = 0;
+
+                transactions.forEach(t => {
+                    if (new Date(t.datetime) > lastClosureTimestamp) {
+                        shiftTxCount++;
+                        if (t.type === 'بيع') shiftSalesTotal += t.total;
+                        else if (t.type === 'استرجاع') shiftReturnsTotal += t.total;
+                    }
+                });
+
+                const shiftNetBalance = shiftSalesTotal - shiftReturnsTotal;
+
+                if (shiftTxCount === 0) {
+                    return renderToastNotification('لا يمكن إجراء إغلاق مالي لوردية خالية تماماً من فواتير البيع أو المرتجعات النشطة.', 'warning');
+                }
+
+                if (confirm(`مؤشرات تسوية صندوق الوردية الحالي:\n- إجمالي المبيعات: ${shiftSalesTotal.toFixed(2)} $\n- إجمالي المرتجعات: ${shiftReturnsTotal.toFixed(2)} $\n- الصافي المالي لترحيله للدرج: ${shiftNetBalance.toFixed(2)} $\n- عدد حركات الحساب: ${shiftTxCount}\n\nهل تؤكد تصفير الوردية وقيد هذا الإغلاق المالي لليوم بشكل رسمي؟`)) {
+                    const closureObject = {
+                        totalSales: shiftSalesTotal,
+                        totalReturns: shiftReturnsTotal,
+                        net: shiftNetBalance,
+                        transactionCount: shiftTxCount,
+                        closedBy: currentUser || 'مدير النظام',
+                        closedAt: new Date().toISOString()
+                    };
+
+                    await executeDbWrite('dailyClosures', closureObject);
+                    await logSystemEvent('إغلاق مالي', `قيد تسوية الوردية والدرج بصافي مالي محقق ${shiftNetBalance.toFixed(2)} $`);
+                    
+                    renderToastNotification('تم إقفال وتسوية الصناديق والوردية الحالية وترحيل الدفاتر بنجاح.', 'success');
+                    await triggerUIRefreshLifecycle();
+                }
+
+            } catch (err) {
+                renderToastNotification('فشل ترحيل وإنشاء مستند التسوية الحسابية لليوم.', 'error');
+            }
+        }
+
+        async function deleteClosureRecord(closureId) {
+            if (currentUserRole !== 'admin') return renderToastNotification('غير مصرح بحذف مستندات التسوية التاريخية المطوية.', 'error');
+            if (confirm('تنبيه خطير: هل تود مسح قيد الإقفال المالي هذا؟ لن يؤثر الحذف على الفواتير الحقيقية لكنه سيغير تاريخ احتساب الوردية التالية.')) {
+                await executeDbDelete('dailyClosures', closureId);
+                await logSystemEvent('حذف قيد تسوية', `تم حذف مستند الإغلاق الحسابي آلياً رقم #${closureId}`);
+                renderToastNotification('تم حذف مستند الإقفال المالي بنجاح.', 'success');
+                await triggerUIRefreshLifecycle();
+            }
+        }
+
+        // ===================== معالجة وتصدير النسخ الاحتياطية الشاملة للنظام JSON RECOVERY =====================
+        async function exportFullSystemBackup() {
+            try {
+                const backupPayload = {
+                    medicines: await executeDbReadAll('medicines'),
+                    transactions: await executeDbReadAll('transactions'),
+                    activityLogs: await executeDbReadAll('activityLogs'),
+                    dailyClosures: await executeDbReadAll('dailyClosures'),
+                    warehouses: await executeDbReadAll('warehouses'),
+                    settings: await executeDbReadAll('settings'),
+                    metadata: { exportedAt: new Date().toISOString(), platform: 'Pharmacy Enterprise ERP' }
+                };
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPayload));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `Pharmacy_ERP_Full_Backup_${new Date().toISOString().slice(0,10)}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                
+                renderToastNotification('تم بناء وتنزيل الملف الشامل للنسخة الاحتياطية الآمنة بنجاح.', 'success');
+            } catch (err) {
+                renderToastNotification('فشل تكوين وبناء حزمة النسخة الاحتياطية للأنظمة.', 'error');
+            }
+        }
+
+        async function wipeEntireDatabaseSystemData() {
+            if (currentUserRole !== 'admin') return renderToastNotification('عذراً، يتطلب مسح تراكيب النظام والصناديق صلاحية المشرف المطلقة.', 'error');
+            
+            if (confirm('تنبيه مالي وإداري قطعي: هل أنت متأكد من مسح وحذف كافة تراكيب البيانات والديون والفواتير والملفات الطبية وتصفير النظام بالكامل؟ (لا يمكن التراجع عن هذا الإجراء الجذري)')) {
+                const checkText = prompt('تأكيد أمني إضافي: يرجى كتابة الكلمة "تصفير" للمضي قدماً في حذف البنية المخزنية لقاعدة البيانات:');
+                if (checkText === 'تصفير') {
+                    await executeDbClear('medicines');
+                    await executeDbClear('transactions');
+                    await executeDbClear('activityLogs');
+                    await executeDbClear('dailyClosures');
+                    await executeDbClear('warehouses');
+                    await executeDbClear('settings');
+                    
+                    renderToastNotification('تم تهيأة ومسح قاعدة البيانات وتصفير دفاتر المحاسبة بالكامل بنجاح.', 'success');
+                    logout();
+                } else {
+                    renderToastNotification('تم إلغاء عملية تهيأة النظام لعدم تطابق كلمة التأكيد الأمنية.', 'warning');
+                }
+            }
+        }
+
+        async function clearAllTransactionsHistory() {
+            if (currentUserRole !== 'admin') return renderToastNotification('غير مصرح لتصفير أرشيف المعاملات المكتسبة مسبقاً.', 'error');
+            if (confirm('هل ترغب حقاً في إعدام ومسح أرشيف الفواتير والمعاملات التاريخية؟ (هذا الإجراء يصفر الصناديق ولا يحذف أصناف الأدوية الحالية)')) {
+                await executeDbClear('transactions');
+                await logSystemEvent('تصفير فواتير', 'تم تفريغ وأرشفة كشف الفواتير الكلي للنظام بالكامل.');
+                renderToastNotification('تم تفريغ الأرشيف المالي للعمليات بنجاح.', 'success');
+                await triggerUIRefreshLifecycle();
+            }
+        }
+
+        async function clearSystemAuditLogs() {
+            if (currentUserRole !== 'admin') return renderToastNotification('غير مصرح لك بتصفير سجلات الأمان والرقابة.', 'error');
+            if (confirm('هل تود حقاً حذف سجل التدقيق ورقابة الأداء العام؟')) {
+                await executeDbClear('activityLogs');
+                renderToastNotification('تم تفريغ سجلات الأمان العامة الموثقة بنجاح.', 'success');
+                await triggerUIRefreshLifecycle();
+            }
+        }
+
+        // ===================== الإقلاع والتأسيس الأولي للتطبيق الفردي المستقل =====================
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await openDatabaseConnection();
+                // بقاء المستخدم بشاشة تسجيل الدخول المنظمة لحين التحقق
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appScreen').classList.add('hidden');
+            } catch (err) {
+                console.error('فشل حرج أثناء مرحلة إقلاع وبناء قاعدة البيانات التخزينية الموحدة.', err);
+                renderToastNotification('حدث خطأ فني جسيم أثناء محاولة الوصول لذاكرة التخزين المحلية IndexedDB.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
